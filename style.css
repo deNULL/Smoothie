@@ -1,0 +1,62 @@
+#vk_notes_box .box {
+  position: absolute;
+  z-index: 10;
+  margin: 8px -4px 0px;
+}
+#vk_notes_box .sidesh {
+  background: #000;
+  width: 1px;
+  opacity: 0.08;
+  filter: alpha(opacity=8);
+}
+#vk_notes_box .sidesh div {
+  width: 1px;
+  overflow: hidden;
+}
+#vk_notes_box .bottomsh1 {
+  background: #000;
+  height: 1px;
+  opacity: 0.1;
+  filter: alpha(opacity=10);
+}
+#vk_notes_box .bottomsh2 {
+  background: #000;
+  height: 1px;
+  opacity: 0.05;
+  filter: alpha(opacity=5);
+}
+#vk_notes_box .bottomsh1 div, #vk_notes_box .bottomsh2 div {
+  height: 1px;
+  overflow: hidden;
+}
+#vk_notes_box .editor {
+  background: #F7F7F7;
+  border: 1px solid #CCC;
+  padding: 8px;
+  width: 384px;
+}
+
+#vk_notes_input {
+  margin: 0px 0px 8px;
+  width: 376px;
+  padding: 4px 3px;
+}
+
+button#vk_notes_save {
+  padding: 3px 10px 4px;
+}
+
+#vk_notes_visible {
+  margin: 5px 8px 0px;
+}
+
+#vk_notes_profile {
+  float: right;
+  margin-top: -7px;
+  text-transform: none;
+  background: #FFF;
+  color: #A3B0BC;
+  padding: 0px 2px 0px 6px;
+  font-style: normal;
+  font-size: 0.9em;
+}
