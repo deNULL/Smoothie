@@ -17,7 +17,7 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
   active[tab.id] = { stream: null, timer: null };
 
-  var milkshakeScripts = [
+  /*var milkshakeScripts = [
     'Class', 'Shaker', 'Music', 'Renderer', 'Renderable', 'RenderItemMatcher', 'RenderItemMergeFunction', 'Variables',
     'MilkDropPreset', 'PerPixelMesh', 'PipelineContext', 'TimeKeeper', 'Presets'
   ];
@@ -26,10 +26,20 @@ chrome.browserAction.onClicked.addListener(function(tab) {
     chrome.tabs.executeScript(tab.id, {
       file: 'milkshake/' + milkshakeScripts[i] + '.js'
     });
-  }
+  }*/
 
   chrome.tabs.executeScript(tab.id, {
-    file: 'content.js'
+    file: 'webvs/libs.min.js'
+  });
+  chrome.tabs.executeScript(tab.id, {
+    file: 'webvs/webvs.js'
+  });
+  chrome.tabs.executeScript(tab.id, {
+    file: 'webvs/presets.js'
+  });
+
+  chrome.tabs.executeScript(tab.id, {
+    file: 'content-webvs.js'
   });
 
   chrome.tabCapture.capture({ audio: true }, function(stream) {
@@ -38,40 +48,42 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
       var audioContext = new (window.AudioContext || window.webkitAudioContext)();
       var mediaStream = audioContext.createMediaStreamSource(stream);
-      //mediaStream.connect(audioContext.destination);
-      /*var analyser = audioContext.createAnalyser();
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.3;
-      mediaStream.connect(analyser);*/
+      mediaStream.connect(audioContext.destination);
 
-      var processor = audioContext.createJavaScriptNode(512);
+      /*var processor = audioContext.createJavaScriptNode(512);
       processor.onaudioprocess = function(e) {
         var inputArrayL = e.inputBuffer.getChannelData(0);
-        var inputArrayR = e.inputBuffer.getChannelData(1);
-        /*var outputArrayL = e.outputBuffer.getChannelData(0);
-        var outputArrayR = e.outputBuffer.getChannelData(1);  
-        var n = inputArrayL.length;
-    
-        for (var i = 0; i < n; ++i) {
-          outputArrayL[i] = inputArrayL[i];
-          outputArrayR[i] = inputArrayR[i];
-        }*/
-    
+        var inputArrayR = e.inputBuffer.getChannelData(1);    
         chrome.tabs.sendMessage(tab.id, { left: Array.prototype.slice.call(inputArrayL, 0), right: Array.prototype.slice.call(inputArrayR, 0) });
       }
       mediaStream.connect(processor);
-      processor.connect(audioContext.createMediaStreamDestination());
-      mediaStream.connect(audioContext.destination);
+      processor.connect(audioContext.createMediaStreamDestination());*/
 
-      /*active[tab.id].timer = setInterval(function() {
-        var data = new Uint8Array(analyser.frequencyBinCount);
-        //an[tp?'getByteTimeDomainData':'getByteFrequencyData'](fd);
-        analyser.getByteFrequencyData(data);
+      var analyser1 = audioContext.createAnalyser();
+      analyser1.fftSize = 2048;
+      analyser1.smoothingTimeConstant = 0;
+      mediaStream.connect(analyser1);
 
-        chrome.tabs.sendMessage(tab.id, { freq: Array.prototype.slice.call(data, 0) }, function(response) {
-          
-        });
-      }, 50);*/
+      var analyser2 = audioContext.createAnalyser();
+      analyser2.fftSize = 1024;
+      analyser2.smoothingTimeConstant = 0;
+      mediaStream.connect(analyser2);
+
+      var waveform = new Uint8Array(analyser1.frequencyBinCount);
+      var waveformF = new Array(analyser1.frequencyBinCount);
+      var spectrum = new Uint8Array(analyser2.frequencyBinCount);
+      var spectrumF = new Array(analyser2.frequencyBinCount);
+      active[tab.id].timer = setInterval(function() {
+        analyser1.getByteTimeDomainData(waveform);
+        for (var i = 0; i < waveform.length; i++) {
+          waveformF[i] = waveform[i] / 128.0 - 1.0;
+        }
+        analyser2.getByteFrequencyData(spectrum);
+        for (var i = 0; i < spectrum.length; i++) {
+          spectrumF[i] = spectrum[i] / 256.0;
+        }
+        chrome.tabs.sendMessage(tab.id, { waveform: waveformF, spectrum: spectrumF });
+      }, 50);
     } else {
       alert('unable to get stream');
     }
