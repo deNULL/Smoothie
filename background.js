@@ -8,6 +8,7 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
 });
 
 var active = {};
+var audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 chrome.browserAction.onClicked.addListener(function(tab) {
   if (active[tab.id]) {
@@ -45,8 +46,6 @@ chrome.browserAction.onClicked.addListener(function(tab) {
   chrome.tabCapture.capture({ audio: true }, function(stream) {
     if (stream) {
       active[tab.id].stream = stream;
-
-      var audioContext = new (window.AudioContext || window.webkitAudioContext)();
       var mediaStream = audioContext.createMediaStreamSource(stream);
       mediaStream.connect(audioContext.destination);
 

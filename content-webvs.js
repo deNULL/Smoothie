@@ -9,43 +9,6 @@ function geByClass1(c, n) {
   return (n || document).getElementsByClassName(c)[0];
 }
 
-/*chrome.extension.sendRequest({ method: 'getOptions' }, function(opts) {
-  if (opts.enableTooltips) {
-    var script = document.createElement('script');
-    script.src = chrome.extension.getURL('inject.js');
-    document.body.appendChild(script);
-
-    var script = document.createElement('script');
-    script.innerHTML = 'window.vkNotesExtensionId = "' + chrome.runtime.id + '"; window.vkNotesOptions = ' + JSON.stringify(opts) + ';';
-    document.body.appendChild(script);
-  }
-
-  if (opts.enableTooltips || opts.enableNotes) {
-    (new MutationObserver(function(mutations, observer) {
-      mutations.forEach(function(mutation) {
-        //if (mutation.target.id == 'wrap3') {
-          if (opts.enableNotes) {
-            update();
-            updateFriends();
-          }
-        //}
-        //console.log(mutation.target);
-        if (opts.enableTooltips) {
-          window.postMessage({ type: 'VK_NOTES_UPDATE_LINKS' }, '*');
-        }
-      });
-    })).observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    if (opts.enableNotes) {
-      update();
-      updateFriends();
-    }
-  }
-});*/
-
 var overlay = document.createElement('div');
 overlay.style.position = 'fixed';
 overlay.style.left = 0;
@@ -57,7 +20,6 @@ overlay.style.zIndex = 2147483647;
 overlay.innerHTML =
   '<canvas id="smoothie_canvas" width="' + window.innerWidth + '" height="' + window.innerHeight + '"></canvas>' +
   '<div>' +
-
   '</div>';
 document.body.appendChild(overlay);
 
@@ -66,12 +28,16 @@ var canvas = ge('smoothie_canvas');
 window.onresize = function() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  if (webvs) {
+    webvs.resetCanvas();
+    webvs.start();
+  }
 }
 //var ctx = canvas.getContext('2d');
 
 chrome.runtime.onMessage.addListener(onMessage);
 
-var threshold = 0.3;
+var threshold = 0.4;
 var currentThreshold = threshold;
 function onMessage(request, sender, sendResponse) {
   /*if (request.left && request.right && window.shaker) {
@@ -99,7 +65,7 @@ function onMessage(request, sender, sendResponse) {
       currentThreshold = maxAmp;
       analyser.beat = true;
     } else {
-      currentThreshold -= 0.02;
+      currentThreshold -= 0.01;
       //analyser.beat = false;
     }
   }
@@ -108,13 +74,14 @@ function onMessage(request, sender, sendResponse) {
 function stop() {
   document.body.removeChild(overlay);
   chrome.runtime.onMessage.removeListener(onMessage);
-}
-
-var requestAnimFrame = window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback, element) { window.setTimeout(callback, 1000 / 60); };
-
-function animationLoop() {
-  shaker.renderFrame.call(shaker);
-  requestAnimFrame(animationLoop, canvas);
+  window.onresize = null;
+  clearInterval(shuffleTimer);
+  if (webvs) {
+    webvs.stop();
+    webvs.rootComponent.destroy();
+    webvs.copier.cleanup();
+    webvs = false;
+  }
 }
 
 var SmoothieAdapter = Webvs.defineClass(function() {
@@ -136,11 +103,18 @@ var analyser = new SmoothieAdapter();
 var webvs = new Webvs.Main({
   canvas: canvas,
   analyser: analyser,
-  showStat: true,
+  //showStat: true,
 
   onAfterUpdate: function() {
-    analyser.beat = false;
+    analyser.beat = false; // We receive data less frequently than doing redraw, so without resetting beats we'll continue getting beat=true for multiple frames (till next packet of data arrives)
   }
 });
-webvs.loadPreset(allPresets[allPresets.length - 1]);
+webvs.loadPreset(allPresets[(Math.random()*allPresets.length)|0]);
 webvs.start();
+
+var shuffleTimer = setInterval(function() {
+  if (webvs) {
+    webvs.loadPreset(allPresets[(Math.random()*allPresets.length)|0]);
+    webvs.start();
+  }
+}, 30000);
